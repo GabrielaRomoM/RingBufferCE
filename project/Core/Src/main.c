@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ring_buffer.h"
+#include "keypad.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,45 +94,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 	if (last_pressed == GPIO_Pin) {
 		if (HAL_GetTick() < (last_tick + 200)) {
-			return;
+			return 0;
 		}
 	}
 	last_pressed = GPIO_Pin;
 	last_tick = HAL_GetTick();
 
-	uint8_t key_pressed = 0xFF;
-	switch (GPIO_Pin) {
-	case COLUMN1_Pin:
-		HAL_GPIO_WritePin(ROW1_GPIO_Port, ROW1_Pin, GPIO_PIN_RESET);
-		if (HAL_GPIO_ReadPin(COLUMN1_GPIO_Port, COLUMN1_Pin) == 0) {
-			key_pressed = '1';
-			break;
-		}
-		HAL_GPIO_WritePin(ROW2_GPIO_Port, ROW2_Pin, GPIO_PIN_RESET);
-		if (HAL_GPIO_ReadPin(COLUMN1_GPIO_Port, COLUMN1_Pin) == 0) {
-			key_pressed = '4';
-			break;
-		}
-		HAL_GPIO_WritePin(ROW3_GPIO_Port, ROW3_Pin, GPIO_PIN_RESET);
-		if (HAL_GPIO_ReadPin(COLUMN1_GPIO_Port, COLUMN1_Pin) == 0) {
-			key_pressed = '7';
-			break;
-		}
-		HAL_GPIO_WritePin(ROW4_GPIO_Port, ROW4_Pin, GPIO_PIN_RESET);
-		if (HAL_GPIO_ReadPin(COLUMN1_GPIO_Port, COLUMN1_Pin) == 0) {
-			key_pressed = '*';
-			break;
-		}
-		break;
-	default:
-		break;
-	}
+	uint8_t key_pressed = keypad_scan(GPIO_Pin);
+    HAL_UART_Transmit(&huart2, &key_pressed, 1, 10);
 
-	HAL_GPIO_WritePin(ROW1_GPIO_Port, ROW1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(ROW2_GPIO_Port, ROW2_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(ROW3_GPIO_Port, ROW3_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(ROW4_GPIO_Port, ROW4_Pin, GPIO_PIN_SET);
-	HAL_UART_Transmit(&huart2, &key_pressed, 1, 10);
 
 	if (GPIO_Pin == S1_Pin) {
 		HAL_UART_Transmit(&huart2, (uint8_t *)"S1\r\n", 4, 10);
